@@ -1,0 +1,224 @@
+apply plugin: 'java'
+apply plugin: 'idea'
+apply plugin: 'maven'
+apply plugin: 'signing'
+apply plugin: 'eclipse'
+apply plugin: 'findbugs'
+apply plugin: 'checkstyle'
+
+version = '1.0-SNAPSHOT'
+group = "net.davidbuccola.${rootProject.name}"
+
+sourceCompatibility = 1.6
+targetCompatibility = 1.6
+
+ext {
+    // Symbolic versions for selected dependencies.
+    gradleVersion = '1.5'
+    jacksonVersion = '2.1.4'
+    jerseyVersion = '1.12'
+    slf4jVersion = '1.6.6'
+    springVersion = '3.1.3.RELEASE'
+
+    // Support for 'provided' dependencies in generated poms
+    providedDependencies = []
+    provided = { providedDependencies << it }
+}
+
+
+dependencies {
+    compile "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
+    compile "com.google.code.findbugs:annotations:2.0.1", provided
+    compile "com.sun.jersey:jersey-core:${jerseyVersion}"
+    compile "com.sun.jersey:jersey-json:${jerseyVersion}"
+    compile "com.sun.jersey:jersey-client:${jerseyVersion}"
+    compile "commons-lang:commons-lang:2.6"
+    compile "javax.servlet:javax.servlet-api:3.0.1", provided
+    compile "net.davidbuccola.force-canvas:force-canvas:28.0-SNAPSHOT"
+    compile "org.slf4j:slf4j-api:${slf4jVersion}"
+    compile "org.springframework.security:spring-security-core:${springVersion}"
+    compile "org.springframework.security:spring-security-web:${springVersion}"
+}
+
+repositories {
+    mavenCentral()
+    maven { url 'https://oss.sonatype.org/content/repositories/snapshots/' }
+}
+
+configurations.all {
+    resolutionStrategy {
+        cacheChangingModulesFor 5, 'minutes'
+    }
+}
+
+tasks.withType(Compile) {
+    options.debug = true
+    options.encoding = 'UTF-8'
+    options.compilerArgs = ['-Xlint:-options'] // Ignore warning about bootclasspath and source compatibility (for now)
+}
+
+task sourcesJar(type: Jar, dependsOn: classes) {
+    classifier = 'sources'
+    from sourceSets.main.allJava.srcDirs
+}
+
+task javadocJar(type: Jar) {
+    classifier = 'javadoc'
+    from javadoc.destinationDir
+}
+
+artifacts {
+    archives sourcesJar
+    archives javadocJar
+}
+
+checkstyle {
+    sourceSets = [sourceSets.main]
+    configFile = file("$rootProject.projectDir/config/checkstyle/checkstyle.xml")
+    toolVersion = 5.6
+}
+
+findbugs {
+    sourceSets = [sourceSets.main]
+    excludeFilter = file("$rootProject.projectDir/config/findbugs/excludeFilter.xml")
+}
+
+idea {
+    project {
+        ipr {
+            withXml { provider ->
+                provider.node.component.find { it.@name == 'VcsDirectoryMappings' }.mapping.@vcs = 'Git'
+
+                def gradleSettings = getFreshIprComponent(provider.node, 'GradleSettings')
+                gradleSettings.appendNode('option', [name: 'gradleHome', value: gradle.gradleHomeDir.absolutePath])
+
+                def javacSettings = getFreshIprComponent(provider.node, 'JavacSettings')
+                javacSettings.appendNode('option', [name: 'MAXIMUM_HEAP_SIZE', value: "256"])
+
+                def checkstyleSettings = getFreshIprComponent(provider.node, 'CheckStyle-IDEA')
+                def mapNode = checkstyleSettings.appendNode('option', [name: 'configuration']).appendNode('map')
+                mapNode.appendNode('entry', [key: 'active-configuration', value: 'LOCAL_FILE:$PROJECT_DIR$/config/checkstyle/checkstyle.xml:'])
+                mapNode.appendNode('entry', [key: 'check-nonjava-files', value: 'false'])
+                mapNode.appendNode('entry', [key: 'check-test-classes', value: 'false'])
+                mapNode.appendNode('entry', [key: 'location-0', value: 'CLASSPATH:/sun_checks.xml:The default CheckStyle rules'])
+                mapNode.appendNode('entry', [key: 'location-1', value: 'LOCAL_FILE:$PROJECT_DIR$/config/checkstyle/checkstyle.xml:'])
+                mapNode.appendNode('entry', [key: 'suppress-errors', value: 'false'])
+                mapNode.appendNode('entry', [key: 'thirdparty-classpath', value: ''])
+            }
+        }
+        module {
+            inheritOutputDirs = false
+            outputDir = file("${project.buildDir}/classes/main")
+            testOutputDir = file("${project.buildDir}/classes/test")
+        }
+    }
+}
+
+signing {
+    required { !version.endsWith('SNAPSHOT') && gradle.taskGraph.hasTask('uploadArchives') }
+    sign configurations.archives
+}
+
+install {
+    repositories {
+        mavenInstaller {
+            pom.whenConfigured { generatedPom -> customizePom(generatedPom, project) }
+        }
+    }
+}
+
+uploadArchives {
+    repositories {
+        mavenDeployer {
+            pom.whenConfigured { generatedPom ->
+                customizePom(generatedPom, project)
+            }
+            beforeDeployment {
+                deployment -> signing.signPom(deployment)
+            }
+            repository(url: 'https://oss.sonatype.org/service/local/staging/deploy/maven2/') {
+                if (project.hasProperty('sonatypeStagingUsername')) {
+                    authentication(userName: sonatypeStagingUsername, password: sonatypeStagingPassword)
+                }
+            }
+            snapshotRepository(url: 'https://oss.sonatype.org/content/repositories/snapshots/') {
+                if (project.hasProperty('sonatypeStagingUsername')) {
+                    authentication(userName: sonatypeStagingUsername, password: sonatypeStagingPassword)
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Customize the auto-generated pom with additional items necessary for maven central publication.
+ */
+def customizePom(pom, gradleProject) {
+    pom.project {
+        name = gradleProject.name
+        description = gradleProject.description
+        url = "https://github.com/davidbuccola/${rootProject.name}"
+        packaging 'jar'
+        organization {
+            name = 'David Buccola'
+            url = 'https://github.com/davidbuccola'
+        }
+        developers {
+            developer {
+                id = 'davidbuccola'
+                name = 'David Buccola'
+                email = 'david.buccola@gmail.com'
+            }
+        }
+        scm {
+            url = "https://github.com/davidbuccola/${rootProject.name}"
+            connection = "scm:git:git://github.com/davidbuccola/${rootProject.name}.git"
+            developerConnection = "scm:git:git://github.com/davidbuccola/${rootProject.name}.git"
+        }
+        licenses {
+            license {
+                name 'The Apache Software License, Version 2.0'
+                url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                distribution 'repo'
+            }
+        }
+
+        // Respect 'provided' dependencies
+        gradleProject.providedDependencies.each { dep ->
+            pom.dependencies.find { it.artifactId == dep.name }?.scope = 'provided'
+        }
+    }
+}
+
+/**
+ * Generates a new gradle wrapper. You'll want to execute this if you change gradle version or if your jvm options
+ * change below.
+ */
+task wrapper(type: Wrapper) {
+    description = 'Generates gradlew[.bat] scripts'
+
+    gradleVersion = project.gradleVersion
+
+    // Establish the default memory settings for the gradle wrappers. These settings can still be overridden in the
+    // environment with GRADLE_OPTS or JAVA_OPTS if desired. Note that you should avoid use of -Xms here because it has
+    // a tendency to not play well with other settings in the environment if they exist.
+    doLast() {
+        def defaultJvmOpts = "-XX:MaxPermSize=128m -Xmx512m"
+        File wrapperFile = file('gradlew')
+        wrapperFile.text = wrapperFile.text.replace("DEFAULT_JVM_OPTS=\"\"", "DEFAULT_JVM_OPTS=\"$defaultJvmOpts\"")
+        File wrapperBatFile = file('gradlew.bat')
+        wrapperBatFile.text = wrapperBatFile.text.replace("set DEFAULT_JVM_OPTS=", "set DEFAULT_JVM_OPTS=$defaultJvmOpts")
+    }
+}
+
+/**
+ * Returns a brand new Ipr component node with no children. If an existing component node is found it is removed along
+ * with all of its children and a fresh one is created.
+ */
+def getFreshIprComponent(Node projectNode, String componentName) {
+    Node existingComponent = (Node) projectNode.component.find { it.@name == componentName }
+    if (existingComponent) {
+        projectNode.remove(existingComponent)
+    }
+    return projectNode.appendNode('component', [name: componentName])
+}

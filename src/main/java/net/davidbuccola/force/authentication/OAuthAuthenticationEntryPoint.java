@@ -59,7 +59,7 @@ public class OAuthAuthenticationEntryPoint implements AuthenticationEntryPoint {
         FilterInvocation fauxFilterInvocation = new FilterInvocation(request, response, nullFilterChain);
         Collection<ConfigAttribute> attributes = filterSecurityInterceptor.getSecurityMetadataSource().getAttributes(fauxFilterInvocation);
         for (ConfigAttribute attribute : attributes) {
-            if (attribute.getAttribute().equals("ROLE_API_USER")) {
+            if (attribute.toString().contains("ROLE_API_USER")) {
                 return true;
             }
         }

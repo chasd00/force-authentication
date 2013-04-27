@@ -25,11 +25,12 @@ import java.util.List;
 
 @Component("oAuthFilter")
 public class OAuthFilter extends GenericFilterBean {
+
     public static final String CALLBACK_PATH = "/_oauth";
 
     private static final List<GrantedAuthority> AUTHORITIES = Arrays.asList(
-        (GrantedAuthority) new SimpleGrantedAuthority("ROLE_USER"),
-        (GrantedAuthority) new SimpleGrantedAuthority("ROLE_API_USER"));
+        (GrantedAuthority) new SimpleGrantedAuthority("ROLE_USER"),         // Indicate user is authenticated
+        (GrantedAuthority) new SimpleGrantedAuthority("ROLE_API_USER"));    // Indicate user can access the API
 
     @Autowired
     private OAuthConnector connector;

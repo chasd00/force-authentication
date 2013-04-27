@@ -32,9 +32,11 @@ import java.util.Map;
  */
 @Component("signedParametersFilter")
 public class SignedParametersFilter extends GenericFilterBean {
+
     private static final List<GrantedAuthority> AUTHORITIES = Arrays.asList(
-        (GrantedAuthority) new SimpleGrantedAuthority("ROLE_USER"),
-        (GrantedAuthority) new SimpleGrantedAuthority("ROLE_CANVAS_USER"));
+        (GrantedAuthority) new SimpleGrantedAuthority("ROLE_USER"),         // Indicate user is authenticated
+        (GrantedAuthority) new SimpleGrantedAuthority("ROLE_API_USER"),     // Indicate user can access the API
+        (GrantedAuthority) new SimpleGrantedAuthority("ROLE_CANVAS_USER")); // Indicate user came through an SFDC canvas
 
     @Autowired
     private OAuthClientConfig clientConfig;

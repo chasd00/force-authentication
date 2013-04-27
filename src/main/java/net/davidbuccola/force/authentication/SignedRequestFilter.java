@@ -31,12 +31,14 @@ import java.util.Map;
  */
 @Component("signedRequestFilter")
 public class SignedRequestFilter extends GenericFilterBean {
+
     public static final String SIGNED_PARAMETERS = "signed_parameters";
     public static final String SIGNED_REQUEST = "signed_request";
 
     private static final List<GrantedAuthority> AUTHORITIES = Arrays.asList(
-        (GrantedAuthority) new SimpleGrantedAuthority("ROLE_USER"),
-        (GrantedAuthority) new SimpleGrantedAuthority("ROLE_CANVAS_USER"));
+        (GrantedAuthority) new SimpleGrantedAuthority("ROLE_USER"),         // Indicate user is authenticated
+        (GrantedAuthority) new SimpleGrantedAuthority("ROLE_API_USER"),     // Indicate user can access the API
+        (GrantedAuthority) new SimpleGrantedAuthority("ROLE_CANVAS_USER")); // Indicate user came through an SFDC canvas
 
     @Autowired
     private OAuthClientConfig clientConfig;

@@ -1,0 +1,9 @@
+apply plugin: 'java'
+
+description = 'Spring-based Salesforce Authentication - SPA Authorization Connector'
+
+dependencies {
+    compile project(':force-authentication-core')
+    compile "net.davidbuccola.force-spa:force-spa-api:${spaVersion}"
+}
+

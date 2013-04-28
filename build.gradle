@@ -1,153 +1,194 @@
-apply plugin: 'java'
-apply plugin: 'idea'
-apply plugin: 'maven'
-apply plugin: 'signing'
-apply plugin: 'eclipse'
-apply plugin: 'findbugs'
-apply plugin: 'checkstyle'
+configure(allprojects) {
+    apply plugin: 'idea'
+    apply plugin: 'maven'
+    apply plugin: 'signing'
 
-version = '1.0-SNAPSHOT'
-group = "net.davidbuccola.${rootProject.name}"
+    version = '1.0-SNAPSHOT'
+    group = "net.davidbuccola.${rootProject.name}"
 
-sourceCompatibility = 1.6
-targetCompatibility = 1.6
+    ext {
+        // Symbolic versions for selected dependencies.
+        gradleVersion = '1.5'
+        jacksonVersion = '2.1.4'
+        jerseyVersion = '1.12'
+        slf4jVersion = '1.6.6'
+        spaVersion = '1.0-SNAPSHOT'
+        springVersion = '3.1.3.RELEASE'
 
-ext {
-    // Symbolic versions for selected dependencies.
-    gradleVersion = '1.5'
-    jacksonVersion = '2.1.4'
-    jerseyVersion = '1.12'
-    slf4jVersion = '1.6.6'
-    springVersion = '3.1.3.RELEASE'
+        // Support for 'provided' dependencies in generated poms
+        providedDependencies = []
+        provided = { providedDependencies << it }
+    }
 
-    // Support for 'provided' dependencies in generated poms
-    providedDependencies = []
-    provided = { providedDependencies << it }
-}
-
-
-dependencies {
-    compile "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
-    compile "com.google.code.findbugs:annotations:2.0.1", provided
-    compile "com.sun.jersey:jersey-core:${jerseyVersion}"
-    compile "com.sun.jersey:jersey-json:${jerseyVersion}"
-    compile "com.sun.jersey:jersey-client:${jerseyVersion}"
-    compile "commons-lang:commons-lang:2.6"
-    compile "javax.servlet:javax.servlet-api:3.0.1", provided
-    compile "net.davidbuccola.force-canvas:force-canvas:28.0-SNAPSHOT"
-    compile "org.slf4j:slf4j-api:${slf4jVersion}"
-    compile "org.springframework.security:spring-security-core:${springVersion}"
-    compile "org.springframework.security:spring-security-web:${springVersion}"
-}
-
-repositories {
-    mavenCentral()
-    maven { url 'https://oss.sonatype.org/content/repositories/snapshots/' }
-}
-
-configurations.all {
-    resolutionStrategy {
-        cacheChangingModulesFor 5, 'minutes'
+    repositories {
+        mavenCentral()
+        maven { url 'https://oss.sonatype.org/content/repositories/snapshots/' }
     }
 }
 
-tasks.withType(Compile) {
-    options.debug = true
-    options.encoding = 'UTF-8'
-    options.compilerArgs = ['-Xlint:-options'] // Ignore warning about bootclasspath and source compatibility (for now)
-}
+configure(rootProject) {
+    ext.gitHash = 'git log -1 --format=%H'.execute().text.trim()
 
-task sourcesJar(type: Jar, dependsOn: classes) {
-    classifier = 'sources'
-    from sourceSets.main.allJava.srcDirs
-}
+    idea {
+        project {
+            ipr {
+                withXml { provider ->
+                    provider.node.component.find { it.@name == 'VcsDirectoryMappings' }.mapping.@vcs = 'Git'
 
-task javadocJar(type: Jar) {
-    classifier = 'javadoc'
-    from javadoc.destinationDir
-}
+                    def gradleSettings = getFreshIprComponent(provider.node, 'GradleSettings')
+                    gradleSettings.appendNode('option', [name: 'gradleHome', value: gradle.gradleHomeDir.absolutePath])
 
-artifacts {
-    archives sourcesJar
-    archives javadocJar
-}
+                    def javacSettings = getFreshIprComponent(provider.node, 'JavacSettings')
+                    javacSettings.appendNode('option', [name: 'MAXIMUM_HEAP_SIZE', value: "256"])
 
-checkstyle {
-    sourceSets = [sourceSets.main]
-    configFile = file("$rootProject.projectDir/config/checkstyle/checkstyle.xml")
-    toolVersion = 5.6
-}
-
-findbugs {
-    sourceSets = [sourceSets.main]
-    excludeFilter = file("$rootProject.projectDir/config/findbugs/excludeFilter.xml")
-}
-
-idea {
-    project {
-        ipr {
-            withXml { provider ->
-                provider.node.component.find { it.@name == 'VcsDirectoryMappings' }.mapping.@vcs = 'Git'
-
-                def gradleSettings = getFreshIprComponent(provider.node, 'GradleSettings')
-                gradleSettings.appendNode('option', [name: 'gradleHome', value: gradle.gradleHomeDir.absolutePath])
-
-                def javacSettings = getFreshIprComponent(provider.node, 'JavacSettings')
-                javacSettings.appendNode('option', [name: 'MAXIMUM_HEAP_SIZE', value: "256"])
-
-                def checkstyleSettings = getFreshIprComponent(provider.node, 'CheckStyle-IDEA')
-                def mapNode = checkstyleSettings.appendNode('option', [name: 'configuration']).appendNode('map')
-                mapNode.appendNode('entry', [key: 'active-configuration', value: 'LOCAL_FILE:$PROJECT_DIR$/config/checkstyle/checkstyle.xml:'])
-                mapNode.appendNode('entry', [key: 'check-nonjava-files', value: 'false'])
-                mapNode.appendNode('entry', [key: 'check-test-classes', value: 'false'])
-                mapNode.appendNode('entry', [key: 'location-0', value: 'CLASSPATH:/sun_checks.xml:The default CheckStyle rules'])
-                mapNode.appendNode('entry', [key: 'location-1', value: 'LOCAL_FILE:$PROJECT_DIR$/config/checkstyle/checkstyle.xml:'])
-                mapNode.appendNode('entry', [key: 'suppress-errors', value: 'false'])
-                mapNode.appendNode('entry', [key: 'thirdparty-classpath', value: ''])
+                    def checkstyleSettings = getFreshIprComponent(provider.node, 'CheckStyle-IDEA')
+                    def mapNode = checkstyleSettings.appendNode('option', [name: 'configuration']).appendNode('map')
+                    mapNode.appendNode('entry', [key: 'active-configuration', value: 'LOCAL_FILE:$PROJECT_DIR$/config/checkstyle/checkstyle.xml:'])
+                    mapNode.appendNode('entry', [key: 'check-nonjava-files', value: 'false'])
+                    mapNode.appendNode('entry', [key: 'check-test-classes', value: 'false'])
+                    mapNode.appendNode('entry', [key: 'location-0', value: 'CLASSPATH:/sun_checks.xml:The default CheckStyle rules'])
+                    mapNode.appendNode('entry', [key: 'location-1', value: 'LOCAL_FILE:$PROJECT_DIR$/config/checkstyle/checkstyle.xml:'])
+                    mapNode.appendNode('entry', [key: 'suppress-errors', value: 'false'])
+                    mapNode.appendNode('entry', [key: 'thirdparty-classpath', value: ''])
+                }
             }
         }
+    }
+}
+
+configure(subprojects) {
+    apply plugin: 'java'
+    apply plugin: 'osgi'
+    apply plugin: 'eclipse'
+    apply plugin: 'findbugs'
+    apply plugin: 'checkstyle'
+
+    ext.gitHash = rootProject.gitHash  // So we don't execute git command multiple times
+
+    sourceCompatibility = 1.6
+    targetCompatibility = 1.6
+
+    idea {
         module {
             inheritOutputDirs = false
             outputDir = file("${project.buildDir}/classes/main")
             testOutputDir = file("${project.buildDir}/classes/test")
         }
     }
-}
 
-signing {
-    required { !version.endsWith('SNAPSHOT') && gradle.taskGraph.hasTask('uploadArchives') }
-    sign configurations.archives
-}
+    task sourcesJar(type: Jar, dependsOn: classes) {
+        classifier = 'sources'
+        from sourceSets.main.allJava.srcDirs
+    }
 
-install {
-    repositories {
-        mavenInstaller {
-            pom.whenConfigured { generatedPom -> customizePom(generatedPom, project) }
+    task javadocJar(type: Jar) {
+        classifier = 'javadoc'
+        from javadoc.destinationDir
+    }
+
+    artifacts {
+        archives sourcesJar
+        archives javadocJar
+    }
+
+    tasks.withType(Compile) {
+        options.debug = true
+        options.encoding = 'UTF-8'
+        options.compilerArgs = ['-Xlint:-options'] // Ignore warning about bootclasspath and source compatibility (for now)
+    }
+
+    tasks.withType(Jar) {
+        manifest {
+            attributes('Source-Revision': gitHash)
         }
     }
-}
 
-uploadArchives {
-    repositories {
-        mavenDeployer {
-            pom.whenConfigured { generatedPom ->
-                customizePom(generatedPom, project)
+    checkstyle {
+        sourceSets = [sourceSets.main]
+        configFile = file("$rootProject.projectDir/config/checkstyle/checkstyle.xml")
+        toolVersion = 5.6
+    }
+
+    findbugs {
+        sourceSets = [sourceSets.main]
+        excludeFilter = file("$rootProject.projectDir/config/findbugs/excludeFilter.xml")
+    }
+
+    signing {
+        required { !version.endsWith('SNAPSHOT') && gradle.taskGraph.hasTask('uploadArchives') }
+        sign configurations.archives
+    }
+
+    install {
+        repositories {
+            mavenInstaller {
+                pom.whenConfigured { generatedPom -> customizePom(generatedPom, project) }
             }
-            beforeDeployment {
-                deployment -> signing.signPom(deployment)
-            }
-            repository(url: 'https://oss.sonatype.org/service/local/staging/deploy/maven2/') {
-                if (project.hasProperty('sonatypeStagingUsername')) {
-                    authentication(userName: sonatypeStagingUsername, password: sonatypeStagingPassword)
+        }
+    }
+
+    uploadArchives {
+        repositories {
+            mavenDeployer {
+                pom.whenConfigured { generatedPom ->
+                    customizePom(generatedPom, project)
                 }
-            }
-            snapshotRepository(url: 'https://oss.sonatype.org/content/repositories/snapshots/') {
-                if (project.hasProperty('sonatypeStagingUsername')) {
-                    authentication(userName: sonatypeStagingUsername, password: sonatypeStagingPassword)
+                beforeDeployment {
+                    deployment -> signing.signPom(deployment)
+                }
+                repository(url: 'https://oss.sonatype.org/service/local/staging/deploy/maven2/') {
+                    if (project.hasProperty('sonatypeStagingUsername')) {
+                        authentication(userName: sonatypeStagingUsername, password: sonatypeStagingPassword)
+                    }
+                }
+                snapshotRepository(url: 'https://oss.sonatype.org/content/repositories/snapshots/') {
+                    if (project.hasProperty('sonatypeStagingUsername')) {
+                        authentication(userName: sonatypeStagingUsername, password: sonatypeStagingPassword)
+                    }
                 }
             }
         }
     }
+
+    if (file("src/integrationTest").exists()) {
+        sourceSets {
+            integrationTest {
+                compileClasspath += main.output + test.output
+                runtimeClasspath += main.output + test.output
+            }
+        }
+
+        configurations {
+            integrationTestCompile.extendsFrom testCompile
+            integrationTestRuntime.extendsFrom testRuntime
+        }
+
+        task integrationTest(type: Test) {
+            classpath = sourceSets.integrationTest.runtimeClasspath
+            testClassesDir = sourceSets.integrationTest.output.classesDir
+            testResultsDir = file("${project.testResultsDir}/$name")
+        }
+
+        idea {
+            module {
+                testSourceDirs += sourceSets.integrationTest.java.srcDirs
+                testSourceDirs += sourceSets.integrationTest.resources.srcDirs
+                scopes.TEST.plus.add(configurations.integrationTestCompile)
+                scopes.TEST.plus.add(configurations.integrationTestRuntime)
+            }
+        }
+
+        eclipse {
+            classpath {
+                plusConfigurations.add(configurations.integrationTestCompile)
+                plusConfigurations.add(configurations.integrationTestRuntime)
+            }
+        }
+    }
+
+    // Support for 'provided' dependencies in generated poms
+    ext.providedDependencies = []
+    ext.provided = { providedDependencies << it }
 }
 
 /**
@@ -191,8 +232,8 @@ def customizePom(pom, gradleProject) {
 }
 
 /**
- * Generates a new gradle wrapper. You'll want to execute this if you change gradle version or if your jvm options
- * change below.
+ * Generates a new gradle wrapper. You'll want to do this if you change gradle version or if your jvm options change
+ * below.
  */
 task wrapper(type: Wrapper) {
     description = 'Generates gradlew[.bat] scripts'
@@ -222,3 +263,4 @@ def getFreshIprComponent(Node projectNode, String componentName) {
     }
     return projectNode.appendNode('component', [name: componentName])
 }
+

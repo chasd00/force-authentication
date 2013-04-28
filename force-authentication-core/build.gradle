@@ -1,0 +1,18 @@
+apply plugin: 'java'
+
+description = 'Spring-based Salesforce Authentication - Core'
+
+dependencies {
+    compile "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
+    compile "com.google.code.findbugs:annotations:2.0.1", provided
+    compile "com.sun.jersey:jersey-core:${jerseyVersion}"
+    compile "com.sun.jersey:jersey-json:${jerseyVersion}"
+    compile "com.sun.jersey:jersey-client:${jerseyVersion}"
+    compile "commons-lang:commons-lang:2.6"
+    compile "javax.servlet:javax.servlet-api:3.0.1", provided
+    compile "net.davidbuccola.force-canvas:force-canvas:28.0-SNAPSHOT"
+    compile "org.slf4j:slf4j-api:${slf4jVersion}"
+    compile "org.springframework.security:spring-security-core:${springVersion}"
+    compile "org.springframework.security:spring-security-web:${springVersion}"
+}
+

@@ -1,0 +1,12 @@
+apply plugin: 'java'
+apply plugin: 'eclipse'
+
+description = 'Spring-based Salesforce Authentication - Build and Test Configuration'
+
+idea {
+    module {
+        inheritOutputDirs = false
+        outputDir = file("${project.buildDir}/classes/main")
+        testOutputDir = file("${project.buildDir}/classes/test")
+    }
+}

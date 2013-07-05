@@ -1,5 +1,6 @@
 rootProject.name = 'force-authentication'
 
+include 'config'
 include 'force-authentication-core'
 include 'force-authentication-spa'
 

@@ -26,7 +26,7 @@ import java.util.List;
 @Component("oAuthFilter")
 public class OAuthFilter extends GenericFilterBean {
 
-    public static final String CALLBACK_PATH = "/_oauth";
+    public static final String CALLBACK_PATH = "/oauth";
 
     private static final List<GrantedAuthority> AUTHORITIES = Arrays.asList(
         (GrantedAuthority) new SimpleGrantedAuthority("ROLE_USER"),         // Indicate user is authenticated

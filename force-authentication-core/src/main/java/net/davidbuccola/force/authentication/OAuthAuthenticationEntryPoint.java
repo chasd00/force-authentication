@@ -83,7 +83,7 @@ public class OAuthAuthenticationEntryPoint implements AuthenticationEntryPoint {
         }
 
         builder.append(request.getContextPath());
-        builder.append("/_oauth");
+        builder.append(OAuthFilter.CALLBACK_PATH);
 
         return builder.toString();
     }

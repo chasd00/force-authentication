@@ -9,7 +9,7 @@ configure(allprojects) {
     // the version is specified symbolically here to simplify maintenance.
 
     ext {
-        gradleVersion = '2.0'
+        gradleVersion = '2.3'
         hamcrestVersion = '1.3'
         jacksonVersion = '2.1.4'
         jerseyVersion = '1.12'
@@ -116,6 +116,7 @@ configure(subprojects - project(":config")) {
     }
 
     findbugs {
+        toolVersion = '3.0.0'
         sourceSets = [sourceSets.main]
         excludeFilter = file("${project(':config').projectDir}/src/main/resources/findbugs-exclude.xml")
     }
@@ -250,7 +251,7 @@ task wrapper(type: Wrapper) {
     // environment with GRADLE_OPTS or JAVA_OPTS if desired. Note that you should avoid use of -Xms here because it has
     // a tendency to not play well with other settings in the environment if they exist.
     doLast() {
-        def defaultJvmOpts = "-XX:MaxPermSize=128m -Xmx512m"
+        def defaultJvmOpts = "-Xmx512m"
         File wrapperFile = file('gradlew')
         wrapperFile.text = wrapperFile.text.replace("DEFAULT_JVM_OPTS=\"\"", "DEFAULT_JVM_OPTS=\"$defaultJvmOpts\"")
         File wrapperBatFile = file('gradlew.bat')

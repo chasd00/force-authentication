@@ -3,6 +3,13 @@ force-authentication
 
 Spring-based Salesforce authentication that works with canvas signed requests, HTTP headers, or OAuth.
 
+# Building
+
+The project is built using gradle. The project includes the standard `gradlew` wrapper that does all the heavy lifting. `gradlew` makes sure the right version of gradle is available so that you don't need to worry about  installing it yourself. It is all automatic. To build, just type:
+   ```bash
+./gradlew
+   ```
+
 # Sample Spring Configuration
 This library is designed to work with Spring authentication. You simply configure the library's Spring Beans into your 
 application and then the library does the rest. A spring bean called **oAuthClientConfig** is exposed for configuring 
